@@ -1,0 +1,144 @@
+version: 2
+
+project_name: gaps
+
+before:
+  hooks:
+    - go mod tidy -compat=1.26
+
+builds:
+  - id: gaps
+    binary: gaps
+    main: .
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    env:
+      - CGO_ENABLED=0
+
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+    flags:
+      - -mod=readonly
+      - -trimpath
+    ldflags:
+      - -s -w
+
+source:
+  enabled: true
+  name_template: "{{ .ProjectName }}-{{ .Version }}-src"
+
+snapshot:
+  version_template: "{{.Version}}"
+
+# --- Release  -------------------------------------------------------------------------------------
+
+release:
+  github:
+    owner: "butuzov"
+    name: "watchmysix"
+  draft: false
+  prerelease: auto
+  header: |
+    If you value it, consider [supporting](#Supporting) the @butuzov (& his military unit) in this trying times.
+
+    We appreciate it! :heart:
+
+# --- Artifacts ------------------------------------------------------------------------------------
+archives:
+  - id: golang-cross
+    name_template: "{{.Binary}}_{{.Os}}_{{.Arch}}"
+    files:
+      - completions/*
+      - README.md
+      - LICENSE
+      - CHANGELOG*
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+  - id: binaries
+    ids:
+      - main
+    format: binary
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
+dockers_v2:
+  - disable: "{{ .IsSnapshot }}"
+    id: "{{.ProjectName}}"
+    tags:
+      - latest
+      - "{{.Version}}"
+    dockerfile: resources/Dockerfile.distroless
+    images:
+      - "ghcr.io/butuzov/gaps"
+      - "docker.io/butuzov/gaps"
+    labels:
+      "org.opencontainers.image.title": "{{.ProjectName}}"
+      "org.opencontainers.image.description": "no gaps "
+      "org.opencontainers.image.source": "{{.GitURL}}"
+      "org.opencontainers.image.url": "{{.GitURL}}"
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.documentation": "https://butuzov.github.io/gaps/"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: true
+
+  - disable: "{{ .IsSnapshot }}"
+    id: "{{.ProjectName}}-alpine"
+    tags:
+      - latest-alpine
+      - "{{.Version}}-alpine"
+    dockerfile: resources/Dockerfile.alpine
+    images:
+      - "ghcr.io/butuzov/gaps"
+      - "docker.io/butuzov/gaps"
+    labels:
+      "org.opencontainers.image.title": "{{.ProjectName}}"
+      "org.opencontainers.image.description": "no gaps "
+      "org.opencontainers.image.source": "{{.GitURL}}"
+      "org.opencontainers.image.url": "{{.GitURL}}"
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.documentation": "https://butuzov.github.io/gaps/"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: true
+
+checksum:
+  disable: false
+  name_template: "checksums.txt"
+
+changelog:
+  use: git
+  sort: asc
+  abbrev: 7
+
+  filters:
+    exclude:
+      - Merge pull request
+      - Merge branch
+
+  groups:
+    - title: "🚀 Features"
+      regexp: '^feat(\(.+\))?:'
+
+    - title: "🐛 Fixes"
+      regexp: '^(fix|bug)(\(.+\))?:'
+
+    - title: "🧹 Minor"
+      regexp: '^chore(\(.+\))?:'
+
+    - title: "📦 Dependencies"
+      regexp: '^deps(\(.+\))?:'
+
+    - title: "📜 Other"
+      regexp: ".*"

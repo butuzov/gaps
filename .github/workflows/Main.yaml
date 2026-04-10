@@ -1,0 +1,48 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+  pull_request:
+
+jobs:
+  Testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: true
+          cache-dependency-path: "**/go.sum"
+
+      - uses: actions/cache@v5
+        if: ${{ !env.ACT }}
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.golang }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.golang }}-
+
+      - uses: go-task/setup-task@v2
+
+      # ---  🚀 Dev Pipiline -----------------------------------------------------------------------
+      - run: task build
+      - run: task tests
+
+      # TODO: coverals reporting
+
+  Linter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}

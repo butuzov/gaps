@@ -1,0 +1,6 @@
+# syntax=docker/dockerfile:1.4
+FROM alpine:3.23.3 AS base
+RUN echo "=== WORKDIR ===" && pwd && ls -la
+ARG TARGETPLATFORM
+ENTRYPOINT ["gaps"]
+COPY $TARGETPLATFORM/gaps /usr/bin/

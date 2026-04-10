@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+silent: true
+
+tasks:
+  default: task --list --sort=none
+
+  dev:
+    sources:
+      - ./**/*.go
+      - ./*.go
+    method: timestamp
+    cmds:
+      - clear
+      - task: tests
+      - task: bench
+      - task: build
+      - ls -lah ./bin/gaps
+      - ./bin/gaps --version
+
+  tests:
+    desc: Run Tests
+    vars:
+      TPARSE_FEATURE:
+        sh: command -v tparse >/dev/null && echo true || echo false
+      DEFAULT_ARGS: -test.fullpath=true -v ./...
+    cmds:
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} -json {{.CLI_ARGS}} | tparse -progress
+        if: '{{eq .TPARSE_FEATURE "true"}}'
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} {{.CLI_ARGS}}
+        if: '{{eq .TPARSE_FEATURE "false"}}'
+
+  tests:coverage:
+    desc: Run Tests (with coverage report)
+    cmd: |
+      go test -test.fullpath=true -v -cover \
+        -covermode=atomic\
+        -coverprofile=coverage.out \
+        -coverpkg {{.CLI_ARGS}} ./...
+
+  tests:bench:
+    cmd: |
+      go test -test.fullpath=true -benchmem -run=^$ -bench "^Benchmark" {{.CLI_ARGS}} ./...
+
+  build:
+    desc: Build an app (natively)
+    cmd: go build -trimpath -v -ldflags="-w -s"  -o ./bin/gaps .
+
+  install:
+    desc: Install an app
+    cmd: go install -trimpath -v -ldflags="-w -s" .
+
+  docker:
+    desc: Build docker image (natively)
+    cmds:
+      - docker build -t actions-gaps  --progress=plain .
+      - docker images | grep actions
+
+  tools:git:setup:
+    desc: "tooling: Installs git commit template & commit-msg hook"
+    cmds:
+      - cp ./scripts/git/commit-msg .git/hooks/commit-msg
+      - git config commit.template $(pwd)/scripts/git/commit-msg.template
+
+  tools:prek:install:hooks:
+    desc: "tooling: Install hooks for `prek` (pre-commit)"
+    cmd: prek install -c ./.pre-commit-config.yaml
+
+  tools:goreleaser:test:
+    desc: "tooling: Test `goreleaser`"
+    cmds:
+      - task: tools:goreleaser:cleanup
+      - goreleaser release --snapshot --clean
+
+  tools:goreleaser:cleanup:
+    cmds:
+      - cmd: |
+          docker images | grep gaps | awk '{print $2}' | xargs -L1 docker rmi -f
+      - cmd: rm -rf dist

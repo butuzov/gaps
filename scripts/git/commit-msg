@@ -1,0 +1,11 @@
+#!/bin/sh
+
+regex="^(feat|fix|chore|docs|refactor|test|ci|build)(\(.+\))?: .+"
+
+msg=$(cat "$1")
+
+if ! echo "$msg" | grep -Eq "$regex"; then
+  echo "❌ Invalid commit message"
+  echo "Use: ^(feat|fix|chore|docs|refactor|test|ci|build)(\(.+\))?: message"
+  exit 1
+fi

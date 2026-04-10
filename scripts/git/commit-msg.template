@@ -1,0 +1,3 @@
+pattern: feat|fix|chore|docs|refactor|test|ci|build + ":" + commit mesage
+
+detailed commit message
