@@ -21,7 +21,15 @@ tasks:
 
   tests:
     desc: Run Tests
-    cmd: set -o pipefail && go test -test.fullpath=true -v ./... -json {{.CLI_ARGS}} | tparse -progress
+    vars:
+      TPARSE_FEATURE:
+        sh: command -v tparse >/dev/null && echo true || echo false
+      DEFAULT_ARGS: -test.fullpath=true -v ./...
+    cmds:
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} -json {{.CLI_ARGS}} | tparse -progress
+        if: '{{eq .TPARSE_FEATURE "true"}}'
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} {{.CLI_ARGS}}
+        if: '{{eq .TPARSE_FEATURE "false"}}'
 
   tests:coverage:
     desc: Run Tests (with coverage report)
