@@ -1,0 +1,5 @@
+# syntax=docker/dockerfile:1.4
+FROM gcr.io/distroless/static:nonroot
+ARG TARGETPLATFORM
+ENTRYPOINT ["gaps"]
+COPY $TARGETPLATFORM/gaps /usr/bin/
