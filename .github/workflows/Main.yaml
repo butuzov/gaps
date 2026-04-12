@@ -35,17 +35,16 @@ jobs:
       - run: task build
       - run: task tests
 
+      # TODO: switch from goverals to gaps
       - name: Install goveralls
-        if: matrix.go == 'stable' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         run: go install github.com/mattn/goveralls@latest
 
       - name: Coverage - Sending Report to Coveral
-        if: matrix.go == 'stable' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=coverage.out -service=github
-
-      # TODO: coverals reporting
 
   Linter:
     runs-on: ubuntu-latest
