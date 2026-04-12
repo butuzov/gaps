@@ -6,7 +6,6 @@ bin/*
 dist/*
 
 # Code coverage profiles and other test artifacts
-*.out
 coverage*.out
 
 # env file

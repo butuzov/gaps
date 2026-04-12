@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
-
 version: "3"
+
 silent: true
 
 tasks:
@@ -14,7 +14,8 @@ tasks:
     cmds:
       - clear
       - task: tests
-      - task: bench
+      - task: lints
+      # - task: tests:bench
       - task: build
       - ls -lah ./bin/gaps
       - ./bin/gaps --version
@@ -26,23 +27,25 @@ tasks:
         sh: command -v tparse >/dev/null && echo true || echo false
       DEFAULT_ARGS: -test.fullpath=true -v ./...
     cmds:
-      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} -json {{.CLI_ARGS}} | tparse -progress
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} -json {{.CLI_ARGS}} | tparse  -all -progress
         if: '{{eq .TPARSE_FEATURE "true"}}'
-      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} {{.CLI_ARGS}}
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} {{.CLI_ARGS}} -v -cover -covermode=atomic -coverprofile=coverage.out ./...
         if: '{{eq .TPARSE_FEATURE "false"}}'
+
+  tests:bench:
+    desc: Run Tests (in the benchmark mode)
+    cmd: go test  -benchmem -run=^$  -bench "^Benchmark" {{.CLI_ARGS}} ./...
 
   tests:coverage:
     desc: Run Tests (with coverage report)
     cmd: |
-      go test -test.fullpath=true -v -cover \
+      go test -v -cover \
         -covermode=atomic\
         -coverprofile=coverage.out \
         -coverpkg {{.CLI_ARGS}} ./...
-
-  tests:bench:
-    cmd: |
-      go test -test.fullpath=true -benchmem -run=^$ -bench "^Benchmark" {{.CLI_ARGS}} ./...
-
+  lints:
+    desc: Running Linter
+    cmd: golangci-lint run ./...
   build:
     desc: Build an app (natively)
     cmd: go build -trimpath -v -ldflags="-w -s"  -o ./bin/gaps .
