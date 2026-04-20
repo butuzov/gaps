@@ -1,61 +1,73 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
-silent: true
+# silent: true
 
 tasks:
   default: task --list --sort=none
 
-  dev:
+  dev: &dev
+    desc: Continues Development Pipeline (test-lint-build-run)
     sources:
       - ./**/*.go
       - ./*.go
     method: timestamp
     cmds:
       - clear
-      - task: tests
       - task: lints
-      # - task: tests:bench
+      - task: tests
       - task: build
       - ls -lah ./bin/gaps
-      - ./bin/gaps --version
+      # Add Tested Command Here...
+      # - ./bin/gaps
+
+  dev:all:
+    <<: *dev
+    desc: Continues Development Pipeline (test-lint-build-run)
+    cmds:
+      - clear
+      - task: tests
+      - task: tests:bench
+      - task: lints
+      - task: build
+      # Add Tested Command Here...
+      # - ./bin/gaps
 
   tests:
-    desc: Run Tests
+    desc: "qc: Run Tests"
     vars:
       TPARSE_FEATURE:
         sh: command -v tparse >/dev/null && echo true || echo false
-      DEFAULT_ARGS: -test.fullpath=true -v ./...
+      DEFAULT_ARGS: -test.fullpath=true -v  -covermode=atomic -coverprofile=coverage.out
     cmds:
-      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} -json {{.CLI_ARGS}} | tparse  -all -progress
-        if: '{{eq .TPARSE_FEATURE "true"}}'
-      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} {{.CLI_ARGS}} -v -cover -covermode=atomic -coverprofile=coverage.out ./...
-        if: '{{eq .TPARSE_FEATURE "false"}}'
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} {{.CLI_ARGS}} ./... -json | tparse -progress
+        if: "{{eq .TPARSE_FEATURE \"true\"}}"
+      - cmd: set -o pipefail && go test {{.DEFAULT_ARGS}} {{.CLI_ARGS}} ./...
+        if: "{{eq .TPARSE_FEATURE \"false\"}}"
+        silent: true
+
+  tests:update:
+    desc: "qc: Run Tests & Update Golden Files"
+    cmd: task tests -- --update
 
   tests:bench:
-    desc: Run Tests (in the benchmark mode)
+    desc: "qc: Run Benchmarks"
     cmd: go test  -benchmem -run=^$  -bench "^Benchmark" {{.CLI_ARGS}} ./...
 
-  tests:coverage:
-    desc: Run Tests (with coverage report)
-    cmd: |
-      go test -v -cover \
-        -covermode=atomic\
-        -coverprofile=coverage.out \
-        -coverpkg {{.CLI_ARGS}} ./...
   lints:
-    desc: Running Linter
+    desc: "qc: Run Linter"
     cmd: golangci-lint run ./...
+
   build:
-    desc: Build an app (natively)
+    desc: "app: build an app"
     cmd: go build -trimpath -v -ldflags="-w -s"  -o ./bin/gaps .
 
   install:
-    desc: Install an app
+    desc: "app: install an app"
     cmd: go install -trimpath -v -ldflags="-w -s" .
 
   docker:
-    desc: Build docker image (natively)
+    desc: "app: dockerize an app (natively)"
     cmds:
       - docker build -t actions-gaps  --progress=plain .
       - docker images | grep actions

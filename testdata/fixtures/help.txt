@@ -1,0 +1,10 @@
+Usage: gaps [flags]
+
+mind te gaps
+
+Flags:
+  -h, --help                      Show context-sensitive help.
+  -c, --profile="coverage.out"    coverage file
+  -g, --golden=GOLDEN             coverage file to compare against
+  -w, --watch                     watch changes in coverrage profile, turns tui
+  -v, --version                   Show version and exit.
