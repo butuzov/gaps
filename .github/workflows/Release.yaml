@@ -19,7 +19,7 @@ jobs:
     steps:
       # - run: echo '${{ toJson(github.event) }}' | jq
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
